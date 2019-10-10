@@ -4,19 +4,9 @@ import (
 	"encoding/hex"
 	"github.com/go-redis/redis"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/khorevaa/EnchantedTBot/csm"
 	"log"
-	"prizmlive-bot/internal/liveBot/HBot/csm"
-	"prizmlive-bot/internal/liveBot/HBot/i18n"
 )
-
-func NewContextWithUpdate(update tgbotapi.Update) HandlerContextInterface {
-
-	return &baseContext{
-		i18n:            i18n.Translotor(),
-		localTranslator: i18n.Translotor(),
-	}
-
-}
 
 // redis db setup
 func NewRedisCsm(opts redis.Options) *csm.RedisCsm {

@@ -1,13 +1,24 @@
-package HBot
+package CallbackContext
 
 import (
+	"encoding/hex"
 	"fmt"
+	"github.com/khorevaa/EnchantedTBot/types"
+	"log"
 	"strings"
 )
 
-var _ CallbackDataInterface = (*CallbackData)(nil)
-var _ CallbackActionInterface = (*CallbackAction)(nil)
-var _ CallbackActionDataInterface = (*ActionData)(nil)
+var _ types.CallbackDataInterface = (*CallbackData)(nil)
+var _ types.CallbackActionInterface = (*CallbackAction)(nil)
+var _ types.CallbackActionDataInterface = (*ActionData)(nil)
+
+const ErrorCallback CallbackAction = 127
+
+const (
+	sep     = "?"
+	sepData = "&"
+	keyData = "__data__"
+)
 
 type CallbackAction int8
 
@@ -68,7 +79,7 @@ func (a ActionData) Map() map[string]string {
 	return result
 }
 
-func (a ActionData) FromSlice(args ...string) CallbackActionDataInterface {
+func (a ActionData) FromSlice(args ...string) types.CallbackActionDataInterface {
 
 	var tmpSlice []string
 
@@ -100,7 +111,7 @@ func (a ActionData) FromSlice(args ...string) CallbackActionDataInterface {
 	return a
 }
 
-func (a ActionData) FromMap(in map[string]string) CallbackActionDataInterface {
+func (a ActionData) FromMap(in map[string]string) types.CallbackActionDataInterface {
 
 	var args []string
 
@@ -135,14 +146,14 @@ func getCallbackData(callbackString string) (action CallbackAction, route []byte
 	return
 }
 
-func (d CallbackData) Action() CallbackActionInterface {
+func (d CallbackData) Action() types.CallbackActionInterface {
 
 	a, _, _ := getCallbackData(d.String())
 
 	return a
 }
 
-func (d CallbackData) Data() CallbackActionDataInterface {
+func (d CallbackData) Data() types.CallbackActionDataInterface {
 
 	_, _, data := getCallbackData(d.String())
 
@@ -161,13 +172,13 @@ func (d CallbackData) Back(data ...string) string {
 
 	if len(data) > 0 {
 		actionData := ActionData("").FromSlice(data...).String()
-		back += sep + actionData
+		back += HBot.sep + actionData
 	}
 
 	return back
 }
 
-func (d CallbackData) Next(next CallbackActionInterface, data ...string) string {
+func (d CallbackData) Next(next types.CallbackActionInterface, data ...string) string {
 
 	_, route, _ := getCallbackData(d.String())
 
@@ -183,7 +194,7 @@ func (d CallbackData) Next(next CallbackActionInterface, data ...string) string 
 	return nextData
 }
 
-func (d CallbackData) WithData(data ...string) CallbackDataInterface {
+func (d CallbackData) WithData(data ...string) types.CallbackDataInterface {
 
 	if len(data) > 0 {
 		actionData := ActionData("").FromSlice(data...).String()
@@ -191,4 +202,19 @@ func (d CallbackData) WithData(data ...string) CallbackDataInterface {
 	}
 
 	return d
+}
+
+func toHexString(d []byte) string {
+	return hex.EncodeToString(d)
+}
+
+func fromHexString(d string) []byte {
+
+	b, e := hex.DecodeString(d)
+
+	if e != nil {
+		log.Panic(e)
+	}
+
+	return b
 }

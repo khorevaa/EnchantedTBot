@@ -1,84 +1,83 @@
 package HBot
 
 import (
-
+	"github.com/khorevaa/EnchantedTBot/builders/menuBuilder"
 	"github.com/khorevaa/EnchantedTBot/csm"
+	"github.com/khorevaa/EnchantedTBot/handlers/Session"
+	"github.com/khorevaa/EnchantedTBot/types"
 	"github.com/yanzay/tbot/v2"
 )
 
 type BotWithHandlers struct {
 	*tbot.Server
 
-	StateHandlers    map[string]StateHandlerFunc
-	MenuHandlers     map[string]MenuHandlerFunc
-	CallbackHandlers map[int8]CallbackHandlerFunc
-	CommandHandlers  map[string]CommandHandlerFunc
+	StateHandlers    *session.SessionHandlers
+	MenuHandlers     map[string]types.MenuHandlerFunc
+	CallbackHandlers map[int8]types.CallbackHandlerFunc
+	CommandHandlers  map[string]types.CommandHandlerFunc
 
 	Sessions SessionStorage
 
-	MainMenuFunc TypeMainMenuFunc
+	Menu *menu.Menu
 
-	ErrorCallbackHandler func(callback CallbackDataInterface, ctx HandlerContextInterface)
+	MainMenuFunc types.TypeMainMenuFunc
+
+	ErrorCallbackHandler func(callback types.CallbackDataInterface, ctx types.HandlerContextInterface)
 }
 
 func (h *BotWithHandlers) InitHandlers() {
 
-	h.StateHandlers = make(map[string]StateHandlerFunc)
-	h.MenuHandlers = make(map[string]MenuHandlerFunc)
-	h.CallbackHandlers = make(map[int8]CallbackHandlerFunc)
-	h.CommandHandlers = make(map[string]CommandHandlerFunc)
+	h.StateHandlers = NewStateHandlers()
+	h.MenuHandlers = make(map[string]types.MenuHandlerFunc)
+	h.CallbackHandlers = make(map[int8]types.CallbackHandlerFunc)
+	h.CommandHandlers = make(map[string]types.CommandHandlerFunc)
 
 }
 
-func (h *BotWithHandlers) registerCallbackHandler(callback CallbackActionInterface, handler CallbackHandlerFunc) {
+func (h *BotWithHandlers) registerCallbackHandler(callback types.CallbackActionInterface, handler types.CallbackHandlerFunc) {
 
 	key := callback.Value()
 	h.CallbackHandlers[key] = handler
 
 }
 
-func (h *BotWithHandlers) registerStateHandler(state string, handler StateHandlerFunc) {
+func (h *BotWithHandlers) registerStateHandler(state string, handler types.StateHandlerFunc) {
 
 	if h.GetChatStateMachine() == nil {
 		h.RegisterChatStateMachine(&csm.InMenoryCsm{})
 	}
 
-	h.StateHandlers[state] = handler
+	h.StateHandlers.Add(state, handler)
 
 }
 
-func (h *BotWithHandlers) RegisterMenuFunc(m TypeMainMenuFunc) {
+func (h *BotWithHandlers) RegisterMenuFunc(m types.TypeMainMenuFunc) {
 
 	h.MainMenuFunc = m
 
 }
 
-func (h *BotWithHandlers) registerMenuHandler(menu string, handler MenuHandlerFunc) {
+func (h *BotWithHandlers) registerMenuHandler(menu string, handler types.MenuHandlerFunc) {
 
 	h.MenuHandlers[menu] = handler
 
 }
 
-func (h *BotWithHandlers) registerCommandHandler(command string, handler CommandHandlerFunc) {
+func (h *BotWithHandlers) registerCommandHandler(command string, handler types.CommandHandlerFunc) {
 
 	h.CommandHandlers[command] = handler
 
 }
 
-func (bot *BotWithHandlers) runStateHandler(ctx SessionContextInterface) {
+func (bot *BotWithHandlers) runStateHandler(ctx types.SessionContextInterface) {
 
 	state, _ := ctx.Get()
 
-	fn, ok := bot.StateHandlers[state]
-
-	if ok {
-		fn(ctx)
-
-	}
+	bot.StateHandlers.Run(state, ctx)
 
 }
 
-func (h *BotWithHandlers) runMenuHandler(ctx MessageContextInterface){
+func (h *BotWithHandlers) runMenuHandler(ctx types.MessageContextInterface) {
 
 	menu := ctx.Text()
 	menuHandler, ok := h.MenuHandlers[menu]
@@ -89,7 +88,7 @@ func (h *BotWithHandlers) runMenuHandler(ctx MessageContextInterface){
 
 }
 
-func (c *BotWithHandlers) runCommandHandler(ctx CommandContextInterface) {
+func (c *BotWithHandlers) runCommandHandler(ctx types.CommandContextInterface) {
 
 	fn, ok := c.CommandHandlers[ctx.Command()]
 
@@ -135,5 +134,3 @@ func (c *BotWithHandlers) runCommandHandler(ctx CommandContextInterface) {
 //
 //		h.ErrorCallbackHandler(callbackData, ctx)
 //	}
-
-}
